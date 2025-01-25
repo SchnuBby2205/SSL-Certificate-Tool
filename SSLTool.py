@@ -1,4 +1,4 @@
-import os, subprocess, re, base64, binascii, json, hashlib, argparse, textwrap
+import os, subprocess, re, base64, binascii, json, hashlib, time, argparse, textwrap
 from urllib.request import urlopen, Request
 
 class SchnuBbySSL:
@@ -15,12 +15,17 @@ class SchnuBbySSL:
         self.accountUrl = None
         self.order = None
         self.orderUrl = None
-        self.orderPayload = {'identifiers': []}
+        self.orderPayload = None
         self.email = email
-        self.colorsOk = '\033[92m'
-        self.colorsWarn = '\033[93m'
-        self.colorsFail = '\033[91m'
-        self.colorsNc = '\033[0m'
+        self.der = None
+        self.colorsOk = ''
+        self.colorsWarn = ''
+        self.colorsFail = ''
+        self.colorsNc = ''
+#        self.colorsOk = '\033[92m'
+#        self.colorsWarn = '\033[93m'
+#        self.colorsFail = '\033[91m'
+#        self.colorsNc = '\033[0m'
         self.opensslCmd = None
         self.authorizations = None
         self.challengeFileName = None
@@ -50,6 +55,14 @@ class SchnuBbySSL:
         protected, _payload = self.b64(json.dumps(protected).encode('utf8')), "" if payload is None else self.b64(json.dumps(payload).encode('utf8'))
         self.opensslCmd = '{0}.{1}'.format(protected, _payload).encode('utf8')
         return self.request(url, data={json.dumps({'protected': protected, 'payload': _payload, 'signature': self.createSignature()}).encode('utf8')})
+    def _poll_until_not(self, url, pending_statuses, err_msg):
+        result, t0 = None, time.time()
+        while result is None or result['status'] in pending_statuses:
+            assert (time.time() - t0 < 3600), "Polling timeout" # 1 hour timeout
+            time.sleep(0 if result is None else 2)
+            result, _, _ = self.sendSignedRequest(url)
+        return result
+
 
     def readAccountKey(self):
         print('[{0}LAEUFT{1}] Lese Account Key...'.format(self.colorsWarn, self.colorsNc), end='\r')
@@ -91,7 +104,8 @@ class SchnuBbySSL:
             print('[  {0}OK{1}  ] Signiere Requests...'.format(self.colorsOk, self.colorsNc), end='\n')
     def validateAuthorization(self):
             ## TODO ACME Pfad als Param
-            #print('[{0}LAEUFT{1}] Validiere Authorisation...'.format(self.colorsWarn, self.colorsNc), end='\r')
+            ## TODO Wenn nicht alle challenges valid sind, muss der Apache bereits gestellt werden.
+            print('[{0}LAEUFT{1}] Validiere Serverbesitz...'.format(self.colorsWarn, self.colorsNc), end='\r')
             for authUrl in self.order['authorizations']:
                 auth, _, _ = self.sendSignedRequest(authUrl)
                 domain = auth['identifier']['value']
@@ -101,14 +115,42 @@ class SchnuBbySSL:
                 token = re.sub(r"[^A-Za-z0-9_\-]", "_", challenge['token'])
                 authKey = '{0}.{1}'.format(token, self.thumbprint)
                 print('File:{0}\nContent:{1}'.format(token, authKey))
-            #print('[  {0}OK{1}  ] Validiere Authorisation...'.format(self.colorsOk, self.colorsNc), end='\n')        
+            print('[  {0}OK{1}  ] Validiere Serverbesitz...'.format(self.colorsOk, self.colorsNc), end='\n')        
+    def signCertificate(self):
+        ## TODO die Dateien müssen zu den jeweiligen Servern kopiert werden und diese dann (neu)gestartet werden.
+        print('[{0}LAEUFT{1}] Erstelle signiertes Zertifikat...'.format(self.colorsWarn, self.colorsNc), end='\r')        
+        proc = subprocess.Popen([self.openssl, "req", "-in", self.csrFile, "-outform", "DER"], stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        out, err = proc.communicate()
+        self.sendSignedRequest(self.order['finalize'], {"csr": self.b64(out)})        
+        self.order = self._poll_until_not(self.orderUrl, ["pending", "processing"], "Error checking order status")
+        if self.order['status'] != "valid":
+            raise ValueError("Order failed: {0}".format(self.order))
+        certificate_pem, _, _ = self.sendSignedRequest(self.order['certificate'])
+        with open('domain.crt', 'w') as f:
+            f.write('{0}'.format(certificate_pem.split("-----END CERTIFICATE-----")[0]+"-----END CERTIFICATE-----"))
+            f.close()
+        with open('intermediate.pem', 'w') as f:
+            f.write('{0}'.format(certificate_pem.split("-----END CERTIFICATE-----")[1]+"-----END CERTIFICATE-----"))
+            f.close()
+        print('[  {0}OK{1}  ] Erstelle signiertes Zertifikat...'.format(self.colorsWarn, self.colorsNc), end='\r')
+
             
 def main(argv=None):
-    cert = SchnuBbySSL('C:/OpenSSL-Win64/bin/openssl.exe', 'mflix1337@gmail.com', 'account.key', 'domain.csr')
+    #cert = SchnuBbySSL('C:/OpenSSL-Win64/bin/openssl.exe', 'mflix1337@gmail.com', 'account.key', 'domain.csr')
+    cert = SchnuBbySSL('C:/Program Files/OpenSSL-Win64/bin/openssl.exe', 'mflix1337@gmail.com', 'account.key', 'domain.csr', 'C:/Users/Server-Admin/Desktop/Server Programme/xampp')
+    #/htdocs/.well-known/acme-challenge
+    #/apache/conf
+    #httpd.conf
+    #httpd_acme.conf
+    #/apache/conf/ssl.key/domain.key
+    #/apache/conf/ssl.crt/domain.crt // intermediate.pem
+    #node.exe 2x
+    #httpd.exe 2x
     cert.readAccountKey()
     cert.readCSR()
     cert.signRequests()
     cert.validateAuthorization()
+    cert.signCertificate()
     
 if __name__ == '__main__':
     main()
