@@ -115,6 +115,20 @@ class SchnuBbySSL:
                 token = re.sub(r"[^A-Za-z0-9_\-]", "_", challenge['token'])
                 authKey = '{0}.{1}'.format(token, self.thumbprint)
                 print('File:{0}\nContent:{1}'.format(token, authKey))
+                ## HIER PRESS BUTTON TO CONTINUE EINBAUEN - UND USER FILE ABLEGEN LASSEN
+                try:
+                    wellknown_url = "http://{0}/.well-known/acme-challenge/{1}".format(domain, token)
+                    ## self.request??
+                    assert (_do_request(wellknown_url)[0] == authKey)
+                except (AssertionError, ValueError) as e:
+                    raise ValueError("Fehler beim validieren des Serverbesitzes")
+
+                # say the challenge is done
+                _send_signed_request(challenge['url'], {}, "Error submitting challenges!")
+                authorization = _poll_until_not(auth_url, ["pending"], "Error checking challenge status for")
+                if authorization['status'] != "valid":
+                    raise ValueError("Challenge did not pass for")
+                ## HIER PRESS BUTTON TO CONTINUE EINBAUEN
             print('[  {0}OK{1}  ] Validiere Serverbesitz...'.format(self.colorsOk, self.colorsNc), end='\n')        
     def signCertificate(self):
         ## TODO die Dateien müssen zu den jeweiligen Servern kopiert werden und diese dann (neu)gestartet werden.
@@ -137,7 +151,7 @@ class SchnuBbySSL:
             
 def main(argv=None):
     #cert = SchnuBbySSL('C:/OpenSSL-Win64/bin/openssl.exe', 'mflix1337@gmail.com', 'account.key', 'domain.csr')
-    cert = SchnuBbySSL('C:/Program Files/OpenSSL-Win64/bin/openssl.exe', 'mflix1337@gmail.com', 'account.key', 'domain.csr', 'C:/Users/Server-Admin/Desktop/Server Programme/xampp')
+    cert = SchnuBbySSL('C:/Program Files/OpenSSL-Win64/bin/openssl.exe', 'mflix1337@gmail.com', 'account.key', 'domain.csr')
     #/htdocs/.well-known/acme-challenge
     #/apache/conf
     #httpd.conf
