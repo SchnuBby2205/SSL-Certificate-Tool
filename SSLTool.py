@@ -128,7 +128,7 @@ class SchnuBbySSL:
                 # say the challenge is done
                 #_send_signed_request(challenge['url'], {}, "Error submitting challenges!")
                 self.sendSignedRequest(challenge['url'], {})
-                authorization = _poll_until_not(auth_url, ["pending"], "Error checking challenge status for")
+                authorization = self._poll_until_not(authUrl, ["pending"], "Error checking challenge status for")
                 if authorization['status'] != "valid":
                     raise ValueError("Challenge did not pass for")
                 ## HIER PRESS BUTTON TO CONTINUE EINBAUEN
