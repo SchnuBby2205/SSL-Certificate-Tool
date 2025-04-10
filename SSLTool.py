@@ -115,16 +115,19 @@ class SchnuBbySSL:
                 token = re.sub(r"[^A-Za-z0-9_\-]", "_", challenge['token'])
                 authKey = '{0}.{1}'.format(token, self.thumbprint)
                 print('File:{0}\nContent:{1}'.format(token, authKey))
+                input("Press Enter to continue...")
                 ## HIER PRESS BUTTON TO CONTINUE EINBAUEN - UND USER FILE ABLEGEN LASSEN
                 try:
                     wellknown_url = "http://{0}/.well-known/acme-challenge/{1}".format(domain, token)
                     ## self.request??
-                    assert (_do_request(wellknown_url)[0] == authKey)
+                    #assert (_do_request(wellknown_url)[0] == authKey)
+                    assert (request(wellknown_url)[0] == authKey)
                 except (AssertionError, ValueError) as e:
                     raise ValueError("Fehler beim validieren des Serverbesitzes")
 
                 # say the challenge is done
-                _send_signed_request(challenge['url'], {}, "Error submitting challenges!")
+                #_send_signed_request(challenge['url'], {}, "Error submitting challenges!")
+                self.sendSignedRequest(challenge['url'], {})
                 authorization = _poll_until_not(auth_url, ["pending"], "Error checking challenge status for")
                 if authorization['status'] != "valid":
                     raise ValueError("Challenge did not pass for")
