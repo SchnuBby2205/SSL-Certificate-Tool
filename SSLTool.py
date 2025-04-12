@@ -22,10 +22,6 @@ class SchnuBbySSL:
         self.colorsWarn = ''
         self.colorsFail = ''
         self.colorsNc = ''
-#        self.colorsOk = '\033[92m'
-#        self.colorsWarn = '\033[93m'
-#        self.colorsFail = '\033[91m'
-#        self.colorsNc = '\033[0m'
         self.opensslCmd = None
         self.authorizations = None
         self.challengeFileName = None
@@ -103,8 +99,6 @@ class SchnuBbySSL:
             self.orderUrl = self.orderUrl['Location']
             print('[  {0}OK{1}  ] Signiere Requests...'.format(self.colorsOk, self.colorsNc), end='\n')
     def validateAuthorization(self):
-            ## TODO ACME Pfad als Param
-            ## TODO Wenn nicht alle challenges valid sind, muss der Apache bereits gestellt werden.
             print('[{0}LAEUFT{1}] Validiere Serverbesitz...'.format(self.colorsWarn, self.colorsNc), end='\r')
             for authUrl in self.order['authorizations']:
                 auth, _, _ = self.sendSignedRequest(authUrl)
@@ -114,8 +108,11 @@ class SchnuBbySSL:
                 challenge = [c for c in auth['challenges'] if c['type'] == 'http-01'][0]
                 token = re.sub(r"[^A-Za-z0-9_\-]", "_", challenge['token'])
                 authKey = '{0}.{1}'.format(token, self.thumbprint)
-                print('File:{0}\nContent:{1}'.format(token, authKey))
-                input("Press Enter to continue...")
+                print('Bitte jetzt den Apache herunterfahren!', end='\n')
+                print('Danach unter htdocs/.well-known/acme-challenge/ eine Datei mit folgenden Eigenschaften anlegen.', end='\n')
+                print('Dateiname:{0}\nInhalt:{1}'.format(token, authKey), end='\n')
+                print('Dann unter apache/conf die Datei httpd.conf umbenennen und die httpd_acme.conf in httpd.conf umbenennen und den Apache starten.', end='\n')
+                input("Enter drücken wenn die Schritte abgeschlossen wurden...")
                 try:
                     wellknown_url = "http://{0}/.well-known/acme-challenge/{1}".format(domain, token)
                     assert (self.request(wellknown_url)[0] == authKey)
@@ -128,7 +125,6 @@ class SchnuBbySSL:
                     raise ValueError("Challenge did not pass for")
             print('[  {0}OK{1}  ] Validiere Serverbesitz...'.format(self.colorsOk, self.colorsNc), end='\n')        
     def signCertificate(self):
-        ## TODO die Dateien müssen zu den jeweiligen Servern kopiert werden und diese dann (neu)gestartet werden.
         print('[{0}LAEUFT{1}] Erstelle signiertes Zertifikat...'.format(self.colorsWarn, self.colorsNc), end='\r')        
         proc = subprocess.Popen([self.openssl, "req", "-in", self.csrFile, "-outform", "DER"], stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out, err = proc.communicate()
@@ -144,18 +140,13 @@ class SchnuBbySSL:
             f.write('{0}'.format(certificate_pem.split("-----END CERTIFICATE-----")[1]+"-----END CERTIFICATE-----"))
             f.close()
         print('[  {0}OK{1}  ] Erstelle signiertes Zertifikat...'.format(self.colorsWarn, self.colorsNc), end='\r')
+        print('Bitte den Apache nochmals stoppen.', end='\n')
+        print('Danach die domain.crt und intermediate.pem Datei nach apache/conf/ssl.crt/ kopieren!', end='\n')
+        print('Die httpd.conf wieder zurück benennen und die derzeitige httpd.conf wieder in httpd_acme.conf umbenennen.', end='\n')
+        print('Apache wieder starten nich vergessen ;).', end='\n')
             
 def main(argv=None):
-    #cert = SchnuBbySSL('C:/OpenSSL-Win64/bin/openssl.exe', 'mflix1337@gmail.com', 'account.key', 'domain.csr')
     cert = SchnuBbySSL('C:/Program Files/OpenSSL-Win64/bin/openssl.exe', 'mflix1337@gmail.com', 'account.key', 'domain.csr')
-    #/htdocs/.well-known/acme-challenge
-    #/apache/conf
-    #httpd.conf
-    #httpd_acme.conf
-    #/apache/conf/ssl.key/domain.key
-    #/apache/conf/ssl.crt/domain.crt // intermediate.pem
-    #node.exe 2x
-    #httpd.exe 2x
     cert.readAccountKey()
     cert.readCSR()
     cert.signRequests()
