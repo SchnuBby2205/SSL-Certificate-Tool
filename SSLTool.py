@@ -116,22 +116,16 @@ class SchnuBbySSL:
                 authKey = '{0}.{1}'.format(token, self.thumbprint)
                 print('File:{0}\nContent:{1}'.format(token, authKey))
                 input("Press Enter to continue...")
-                ## HIER PRESS BUTTON TO CONTINUE EINBAUEN - UND USER FILE ABLEGEN LASSEN
                 try:
                     wellknown_url = "http://{0}/.well-known/acme-challenge/{1}".format(domain, token)
-                    ## self.request??
-                    #assert (_do_request(wellknown_url)[0] == authKey)
-                    assert (request(wellknown_url)[0] == authKey)
+                    assert (self.request(wellknown_url)[0] == authKey)
                 except (AssertionError, ValueError) as e:
                     raise ValueError("Fehler beim validieren des Serverbesitzes")
 
-                # say the challenge is done
-                #_send_signed_request(challenge['url'], {}, "Error submitting challenges!")
                 self.sendSignedRequest(challenge['url'], {})
                 authorization = self._poll_until_not(authUrl, ["pending"], "Error checking challenge status for")
                 if authorization['status'] != "valid":
                     raise ValueError("Challenge did not pass for")
-                ## HIER PRESS BUTTON TO CONTINUE EINBAUEN
             print('[  {0}OK{1}  ] Validiere Serverbesitz...'.format(self.colorsOk, self.colorsNc), end='\n')        
     def signCertificate(self):
         ## TODO die Dateien müssen zu den jeweiligen Servern kopiert werden und diese dann (neu)gestartet werden.
@@ -150,7 +144,6 @@ class SchnuBbySSL:
             f.write('{0}'.format(certificate_pem.split("-----END CERTIFICATE-----")[1]+"-----END CERTIFICATE-----"))
             f.close()
         print('[  {0}OK{1}  ] Erstelle signiertes Zertifikat...'.format(self.colorsWarn, self.colorsNc), end='\r')
-
             
 def main(argv=None):
     #cert = SchnuBbySSL('C:/OpenSSL-Win64/bin/openssl.exe', 'mflix1337@gmail.com', 'account.key', 'domain.csr')
