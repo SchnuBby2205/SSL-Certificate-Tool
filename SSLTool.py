@@ -142,8 +142,8 @@ class SchnuBbySSL:
         print('[  {0}OK{1}  ] Erstelle signiertes Zertifikat...'.format(self.colorsWarn, self.colorsNc), end='\r')
         print('Bitte den Apache nochmals stoppen.', end='\n')
         print('Danach die domain.crt und intermediate.pem Datei nach apache/conf/ssl.crt/ kopieren!', end='\n')
-        print('Die httpd.conf wieder zurück benennen und die derzeitige httpd.conf wieder in httpd_acme.conf umbenennen.', end='\n')
-        print('Apache wieder starten nich vergessen ;).', end='\n')
+        print('Die httpd.conf wieder zurück umbenennen und die derzeitige httpd.conf wieder in httpd_acme.conf umbenennen.', end='\n')
+        print('Apache wieder starten nicht vergessen ;).', end='\n')
             
 def main(argv=None):
     cert = SchnuBbySSL('C:/Program Files/OpenSSL-Win64/bin/openssl.exe', 'mflix1337@gmail.com', 'account.key', 'domain.csr')
