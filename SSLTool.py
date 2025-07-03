@@ -144,6 +144,7 @@ class SchnuBbySSL:
         print('Danach die domain.crt und intermediate.pem Datei nach apache/conf/ssl.crt/ kopieren!', end='\n')
         print('Die httpd.conf wieder zurück umbenennen und die derzeitige httpd.conf wieder in httpd_acme.conf umbenennen.', end='\n')
         print('Apache wieder starten nicht vergessen ;).', end='\n')
+        input("Enter drücken wenn die Schritte abgeschlossen wurden...")
             
 def main(argv=None):
     cert = SchnuBbySSL('C:/Program Files/OpenSSL-Win64/bin/openssl.exe', 'mflix1337@gmail.com', 'account.key', 'domain.csr')
