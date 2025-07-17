@@ -146,8 +146,8 @@ class SchnuBbySSL:
         print('Apache wieder starten nicht vergessen ;).', end='\n')
         input("Enter drücken wenn die Schritte abgeschlossen wurden...")
             
-def main(argv=None):
-    cert = SchnuBbySSL('C:/Program Files/OpenSSL-Win64/bin/openssl.exe', 'mflix1337@gmail.com', 'account.key', 'domain.csr')
+def main(openssl_path, email):
+    cert = SchnuBbySSL(openssl_path, email, 'account.key', 'domain.csr')
     cert.readAccountKey()
     cert.readCSR()
     cert.signRequests()
@@ -155,4 +155,19 @@ def main(argv=None):
     cert.signCertificate()
     
 if __name__ == '__main__':
-    main()
+    parser = argparse.ArgumentParser(
+        description='Generate and sign SSL certificate using SchnuBbySSL.',
+    )
+    parser.add_argument(
+        'openssl_path',
+        type=str,
+        help='Full path to the openssl.exe binary (e.g., "C:/Program Files/OpenSSL-Win64/bin/openssl.exe")'
+    )
+    parser.add_argument(
+        'email',
+        type=str,
+        help='Email address associated with the SSL certificate'
+    )
+
+    args = parser.parse_args()
+    main(args.openssl_path, args.email)
